@@ -45,7 +45,9 @@ jobs:
       # Configure Kubeconfig
       - name: Set kubeconfig
         run: |
-          echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 --decode > $HOME/.kube/config
+
 
       # Deploy to Kubernetes
       - name: Deploy Flask app
