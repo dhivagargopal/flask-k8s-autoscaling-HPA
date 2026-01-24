@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: flask-app
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: flask
@@ -32,5 +32,6 @@ spec:
             path: /health
             port: 5000
           initialDelaySeconds: 5
+
 
 
