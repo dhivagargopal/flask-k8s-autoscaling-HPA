@@ -6,6 +6,7 @@ pipeline {
         IMAGE_NAME   = "dhivagargopal/flask-app"
         IMAGE_TAG    = "${BUILD_NUMBER}"
         DOCKER_CREDS = "dockerhub-creds"
+        K8S_DIR      = "k8s"  // path to your YAML files in repo
     }
 
     options {
@@ -21,23 +22,21 @@ pipeline {
             }
         }
 
-        // Run lint & sanity inside a Python container
         stage('Lint & Sanity Check') {
             agent {
                 docker {
                     image 'python:3.11-slim'
-                    args '-u root:root' // run as root inside container
+                    args '-u root:root'
                 }
             }
             steps {
                 sh '''
                     python3 --version
-                    python3 -m py_compile app.py
+                    python3 -m compileall .
                 '''
             }
         }
 
-        // Build Docker image on the main agent
         stage('Build Docker Image') {
             steps {
                 sh """
@@ -63,11 +62,32 @@ pipeline {
             }
         }
 
+        stage('Deploy to Minikube') {
+            steps {
+                sh """
+                    # Ensure Minikube uses the correct Docker environment if needed
+                    # eval \$(minikube docker-env)
+
+                    # Apply all Kubernetes manifests
+                    kubectl apply -f ${K8S_DIR}/deployment.yaml
+                    kubectl apply -f ${K8S_DIR}/service.yaml
+                    kubectl apply -f ${K8S_DIR}/hpa.yaml
+                    kubectl apply -f ${K8S_DIR}/ingress.yml
+
+                    # Wait for deployment rollout
+                    kubectl rollout status deployment/${APP_NAME} -n default
+
+                    # List pods
+                    kubectl get pods -n default
+                """
+            }
+        }
+
     } // end of stages
 
     post {
         success {
-            echo "✅ Flask app image built & validated successfully"
+            echo "✅ Flask app image built, pushed, and deployed successfully"
         }
         failure {
             echo "❌ Pipeline failed"
