@@ -21,23 +21,15 @@ pipeline {
             }
         }
 
-        // Run lint & sanity inside a Python container
         stage('Lint & Sanity Check') {
-            agent {
-                docker {
-                    image 'python:3.11-slim'
-                    args '-u root:root' // run as root inside container
-                }
-            }
             steps {
                 sh '''
-                    python3 --version
-                    python3 -m py_compile app.py
+                    docker run --rm -v $PWD:/app -w /app python:3.11-slim \
+                    bash -c "python3 --version && python3 -m py_compile app.py"
                 '''
             }
         }
 
-        // Build Docker image on the main agent
         stage('Build Docker Image') {
             steps {
                 sh """
@@ -75,6 +67,7 @@ pipeline {
             }
         }
 
+    } // end of stages
 
     post {
         success {
@@ -87,4 +80,5 @@ pipeline {
             sh 'docker system prune -f'
         }
     }
-}
+
+} // end of pipeline
