@@ -21,20 +21,28 @@ pipeline {
             }
         }
 
+        // Run lint & sanity inside a Python container
         stage('Lint & Sanity Check') {
+            agent {
+                docker {
+                    image 'python:3.11-slim'
+                    args '-u root:root' // run as root inside container
+                }
+            }
             steps {
                 sh '''
-                python3 --version
-                python3 -m py_compile app.py
+                    python3 --version
+                    python3 -m py_compile app.py
                 '''
             }
         }
 
+        // Build Docker image on the main agent
         stage('Build Docker Image') {
             steps {
                 sh """
-                docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
                 """
             }
         }
@@ -47,9 +55,9 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh '''
-                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                    docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                    docker push ${IMAGE_NAME}:latest
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                        docker push ${IMAGE_NAME}:latest
                     '''
                 }
             }
@@ -58,10 +66,10 @@ pipeline {
         stage('Smoke Test Container') {
             steps {
                 sh '''
-                docker run -d --name test-flask -p 5000:5000 ${IMAGE_NAME}:${IMAGE_TAG}
-                sleep 5
-                curl -f http://localhost:5000/health
-                docker rm -f test-flask
+                    docker run -d --name test-flask -p 5000:5000 ${IMAGE_NAME}:${IMAGE_TAG}
+                    sleep 5
+                    curl -f http://localhost:5000/health
+                    docker rm -f test-flask
                 '''
             }
         }
