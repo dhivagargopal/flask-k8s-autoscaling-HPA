@@ -67,13 +67,14 @@ pipeline {
             steps {
                 sh '''
                     docker run -d --name test-flask -p 5000:5000 ${IMAGE_NAME}:${IMAGE_TAG}
-                    sleep 5
+                    sleep 10
+                    docker logs test-flask
                     curl -f http://localhost:5000/health
                     docker rm -f test-flask
                 '''
             }
         }
-    }
+
 
     post {
         success {
