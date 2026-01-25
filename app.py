@@ -1,31 +1,44 @@
-from multiprocessing import Process
+from flask import Flask
+import time
 import os
-import app
-import worker
-import data_generator
 
-def run_app():
-    port = int(os.getenv("APP_PORT", 5000))
-    app.app.run(host="0.0.0.0", port=port)
+app = Flask(__name__)
 
-def run_worker():
-    worker.main()
+@app.route("/")
+def home():
+    return f"Hello from pod {os.getenv('HOSTNAME', 'unknown')}"
 
-def run_data_generator():
-    port = int(os.getenv("DATA_PORT", 6000))
-    data_generator.app.run(host="0.0.0.0", port=port)
+@app.route("/health")
+def health():
+    return "OK", 200
+
+@app.route("/cpu")
+def cpu():
+    """Generate CPU load for 10 seconds"""
+    end = time.time() + 10
+    while time.time() < end:
+        pass
+    return "CPU load generated!"
+
+@app.route("/counter", methods=["GET", "POST"])
+def count():
+    """Simple in-memory counter"""
+    from flask import request, jsonify
+    global counter
+    try:
+        counter
+    except NameError:
+        counter = 0
+    if request.method == "POST":
+        increment = request.json.get("increment", 1)
+        counter += increment
+    return jsonify({"counter": counter})
+
+@app.route("/random")
+def random_number():
+    import random
+    return {"random": random.randint(1, 100)}
 
 if __name__ == "__main__":
-    # Create separate processes for each service
-    p1 = Process(target=run_app)
-    p2 = Process(target=run_worker)
-    p3 = Process(target=run_data_generator)
-
-    p1.start()
-    p2.start()
-    p3.start()
-
-    # Wait for all processes to finish (they won’t, services run indefinitely)
-    p1.join()
-    p2.join()
-    p3.join()
+    port = int(os.getenv("APP_PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
