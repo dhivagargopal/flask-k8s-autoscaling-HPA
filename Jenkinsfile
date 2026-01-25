@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         APP_NAME     = "flask-app"
-        IMAGE_NAME   = "dhivagar/flask-app"
+        IMAGE_NAME   = "dhivagargopal/flask-app"
         IMAGE_TAG    = "${BUILD_NUMBER}"
         DOCKER_CREDS = "dockerhub-creds"
     }
