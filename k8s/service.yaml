@@ -12,3 +12,7 @@ spec:
     - name: http
       port: 5000
       targetPort: 5000
+    - name: data
+      port: 6000
+      targetPort: 6000  
+
